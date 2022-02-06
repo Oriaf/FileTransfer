@@ -1,4 +1,8 @@
 import java.net.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 
 import java.io.BufferedReader;
@@ -6,6 +10,7 @@ import java.io.InputStreamReader;
 
 public class Receive{
 	private static String dest;
+	private static String destDir = "out";
 	private static int port = 6660;
 	private static int timeout = 1000;
 
@@ -26,16 +31,59 @@ public class Receive{
 
 	//Send the file over the network
 	static void receiveFile(Socket clientSocket){
-		BufferedReader in;
+		BufferedInputStream in = null;
+		BufferedOutputStream out = null;
+		BufferedReader nameIn = null;
 		try{
-			in = new BufferedReader(new InputStreamReader(
-							clientSocket.getInputStream()));
+			//Create the output directory
+			File dir = new File(destDir);
+			if(!dir.exists()){
+				if(!dir.mkdirs()){
+					System.out.println("Error: Could not create the speicifed output directories!");
 
-			System.out.println(in.readLine());
+					return;
+				}
+			}
+
+			//Read in the source file name
+			//TODO: Replace with a more reliable solution
+			nameIn = new BufferedReader(new InputStreamReader(
+							clientSocket.getInputStream()));
+			String fileName = nameIn.readLine();
+			System.out.println(fileName);
+
+			File file = new File(destDir + "/" + fileName);
+			//Make sure that the file is created in the designated folder
+			System.out.println(file.toPath().toAbsolutePath());
+			System.out.println(dir.toPath().toAbsolutePath());
+			if(!file.toPath().toAbsolutePath().startsWith(
+							dir.toPath().toAbsolutePath())){
+				System.out.println("WARNING: The file name specified by the client would not be created in the designated output directory. Terminating connection!");
+				return;
+			}
+
+			in = new BufferedInputStream(clientSocket.getInputStream());
+			out = new BufferedOutputStream(new FileOutputStream(file));
+
+			//TODO: Change the while loop from available to instead read bytes until a protocol termination message is sent
+			while(in.available() > 0){
+				out.write(in.read());
+			}
+
 		}
 		catch(IOException exception){
 			System.out.println("Error: Failed to read client input!");
 			System.out.println("\t" + exception);
+		}
+		finally{
+			try{
+				if(in != null) in.close();
+				if(out != null) out.close();
+				if(nameIn != null) nameIn.close();
+			}
+			catch(IOException exception){
+				System.out.println(exception);
+			}
 		}
 	}
 
@@ -50,17 +98,18 @@ public class Receive{
 			return;
 		}
 
-		for(int i = 0; i < 10; i++){
+		while(true){
 			try{
 				Socket clientSocket = socket.accept();
 				receiveFile(clientSocket);		
+				clientSocket.close();
 			}
 			catch(IOException exception){
 				System.out.println("Error:");
 			}
 		}
 
-		closeConnection(socket);
+		//closeConnection(socket);
 
 	}
 
@@ -91,8 +140,13 @@ public class Receive{
 				case "-d":
 					dest = param;
 					break;
+				case "--port":
 				case "-p":
 					port = Integer.parseInt(param);
+					break;
+				case "--output-dir":
+				case "-o":
+					destDir = param;
 					break;
 			}
 		}

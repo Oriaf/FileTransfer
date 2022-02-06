@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.PrintWriter;
 import java.io.IOException;
 
 
@@ -31,9 +32,16 @@ public class Send{
 	static void sendFile(Socket socket){
 		BufferedInputStream sourceIn = null;
 		BufferedOutputStream out = null;
+		PrintWriter nameOut = null;
 		try{
 			//Read from the file
-			File sourceFile = new File(source);
+			File sourceFile = new File(source);	
+
+			//Transmit the name of the source file
+			//TODO: Make more reliable - research encoding formats
+			nameOut = new PrintWriter(socket.getOutputStream(), true);
+			nameOut.println(sourceFile.getName());
+
 			sourceIn = new BufferedInputStream(
 						new FileInputStream(sourceFile));
 
@@ -55,6 +63,7 @@ public class Send{
 			try{
 				if(sourceIn != null) sourceIn.close();
 				if(out != null) out.close();
+				if(nameOut != null) nameOut.close();
 			}
 			catch(IOException exception){
 				System.out.println(exception);
