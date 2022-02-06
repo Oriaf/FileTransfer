@@ -1,11 +1,15 @@
 import java.net.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 
-import java.io.PrintWriter;
 
 public class Send{
 	private static String dest;
-	private static int port = 6610;
+	private static String source;
+	private static int port = 6660;
 	private static int timeout = 1000;
 
 	//Calculate a checksum around the file
@@ -24,7 +28,42 @@ public class Send{
 	}
 
 	//Send the file over the network
-	static void sendFile(){
+	static void sendFile(Socket socket){
+		BufferedInputStream sourceIn = null;
+		BufferedOutputStream out = null;
+		try{
+			//Read from the file
+			File sourceFile = new File(source);
+			sourceIn = new BufferedInputStream(
+						new FileInputStream(sourceFile));
+
+			//Access the connection's output stream
+			out = new BufferedOutputStream(socket.getOutputStream());
+
+			//Transfer the contents of the file
+			while(sourceIn.available() > 0){
+				out.write(sourceIn.read());
+			}
+		}
+		catch(IOException exception){
+			System.out.println("Error: Failed to read the specified file!");
+			System.out.println(exception);
+
+			return;
+		}
+		finally {
+			try{
+				if(sourceIn != null) sourceIn.close();
+				if(out != null) out.close();
+			}
+			catch(IOException exception){
+				System.out.println(exception);
+			}
+		}
+	}
+
+	//Connect to the server at the destination
+	static void connect(){
 		Socket socket = new Socket();
 		try{
 			socket.bind(null);
@@ -67,13 +106,7 @@ public class Send{
 			return;
 		}
 
-		try{
-			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			out.println("Message");
-		}
-		catch(IOException exception){
-			System.out.println(exception);
-		}
+		sendFile(socket);
 
 		closeConnection(socket);
 	}
@@ -105,8 +138,13 @@ public class Send{
 				case "-d":
 					dest = param;
 					break;
+				case "--port":
 				case "-p":
 					port = Integer.parseInt(param);
+					break;
+				case "--source":
+				case "-s":
+					source = param;
 					break;
 			}
 		}
@@ -114,6 +152,6 @@ public class Send{
 
 	public static void main(String args[]){
 		parse(args);
-		sendFile();
+		connect();
 	}
 }
