@@ -45,6 +45,9 @@ public class Send{
 			sourceIn = new BufferedInputStream(
 						new FileInputStream(sourceFile));
 
+			//Transmit the file size of the source file
+			nameOut.println(sourceIn.available());
+
 			//Access the connection's output stream
 			out = new BufferedOutputStream(socket.getOutputStream());
 

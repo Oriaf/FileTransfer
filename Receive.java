@@ -50,12 +50,14 @@ public class Receive{
 			nameIn = new BufferedReader(new InputStreamReader(
 							clientSocket.getInputStream()));
 			String fileName = nameIn.readLine();
-			System.out.println(fileName);
+			int fileSize = Integer.parseInt(nameIn.readLine());
+			System.out.println("Receiving file: " + fileName);
+			System.out.println("\t Size: " + fileSize + " bytes");
 
 			File file = new File(destDir + "/" + fileName);
 			//Make sure that the file is created in the designated folder
-			System.out.println(file.toPath().toAbsolutePath());
-			System.out.println(dir.toPath().toAbsolutePath());
+			//System.out.println(file.toPath().toAbsolutePath());
+			//System.out.println(dir.toPath().toAbsolutePath());
 			if(!file.toPath().toAbsolutePath().startsWith(
 							dir.toPath().toAbsolutePath())){
 				System.out.println("WARNING: The file name specified by the client would not be created in the designated output directory. Terminating connection!");
@@ -65,8 +67,8 @@ public class Receive{
 			in = new BufferedInputStream(clientSocket.getInputStream());
 			out = new BufferedOutputStream(new FileOutputStream(file));
 
-			//TODO: Change the while loop from available to instead read bytes until a protocol termination message is sent
-			while(in.available() > 0){
+			//Receive the transmited file and write it to the storage
+			for(int i = 0; i < fileSize; i++){
 				out.write(in.read());
 			}
 
